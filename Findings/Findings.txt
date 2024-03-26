@@ -94,7 +94,9 @@ Halborn_MissingERC721Receiver.t.sol
 
 
 
-[H-03] HalbornLoans#depositNFTCollateral, withdrawCollateral, getLoan - Reentrancy and possibility to get bigger loan tha expected
+[H-03] HalbornLoans#depositNFTCollateral, withdrawCollateral - Reentrancy Possibility because these functions doesn't follow the CEI Pattern.
+
+
 
 
 
@@ -149,3 +151,13 @@ test/Halborn_LogiErrorGetLoan.t.sol
 
 
 ====================================================
+
+
+
+
+
+
+
+
+
+
