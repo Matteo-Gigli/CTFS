@@ -1,0 +1,151 @@
+
+====================================================
+
+[C-01, C02, C-03] HalbornLoans, HalbornNFT, HalbornTokens#_authorizeUpgrade - everyone can create a new version of each contract and upgrade the older version
+to a new one.
+This will lead to a CRITICAL Bug - AccessControlBug.
+
+
+
+
+
+Description and Mitigation:
+
+Problem here is the function _authorizeUpgrade(address) internal override {}.
+
+This function should be modified in:
+
+function _authorizeUpgrade(address) internal override onlyOwner{}
+
+This will prevent the execution of functions like upgradeTo(), upgradeToAndCall() from everyone
+
+
+
+
+
+PoC:
+
+test/Halborn_Upgrade.t.sol
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+====================================================
+
+
+[H-01] HalbornNFT#setMerkleRoot, mintAirdrops - Everyone can set a new MerkleRoot - AccessControlBug.
+
+MerkleRoot should be used as proof to verify some data, but at this point anyone can set a new one.
+
+Here should be used a onlyOwner modifier to prevent this type of vulnerability.
+
+This will cause some problems to the mintAirdrops() function, because at this moment proof is not valid anymore and when isValidProof(...) is called, we will get
+a revert: "Invalid proof."
+
+PoC:
+
+test/Halborn_MerkleProof.t.sol
+
+
+
+
+
+
+
+
+
+
+
+
+====================================================
+
+[H-02] HalbornLoans#depositNFTCollateral - Missing ERC721 Receiver
+
+HalbornLoans doesn't inherit OnERC721Receiver(), so it doesn't able to manage ERC721 tokens
+
+
+
+PoC
+Halborn_MissingERC721Receiver.t.sol
+
+
+
+
+
+
+
+
+
+
+
+
+====================================================
+
+
+
+[H-03] HalbornLoans#depositNFTCollateral, withdrawCollateral, getLoan - Reentrancy and possibility to get bigger loan tha expected
+
+
+
+
+
+
+
+
+
+
+
+
+
+====================================================
+
+
+
+[H-04] HalbornLoans#getLoan - Logic error and users can take a bigger loan than expected
+
+
+
+    function getLoan(uint256 amount) external {
+        require(
+            totalCollateral[msg.sender] - usedCollateral[msg.sender] < amount,
+            "Not enough collateral"
+        );
+        usedCollateral[msg.sender] += amount;
+        token.mintToken(msg.sender, amount);
+    }
+
+
+There is a logic error in the require statement:
+    totalCollateral[msg.sender] - usedCollateral[msg.sender] < amount,
+
+
+Convert this in values:
+
+    totalCollateral[msg.sender] = 2 Ether
+    usedCollateral[msg.sender] = 0 Ether
+    amount = 10 Ether
+
+
+Require is asking that the amount we want to get as loan should be bigger than totalCollateral - usedCollateral.
+
+So we can get 100 ether having a collateral of 2.
+
+
+
+
+PoC:
+test/Halborn_LogiErrorGetLoan.t.sol
+
+
+====================================================
